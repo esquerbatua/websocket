@@ -59,14 +59,10 @@ pub fn (mut s SSLConn) connect(mut tcp_conn &net.TcpConn)? {
 	if C.SSL_connect(s.ssl) != 1 {
 		return error("Couldn't connect using SSL.")
 	}
-
-	return none
-
 }
 
 pub fn (mut s SSLConn) read_into(mut buffer []Byte)? int {
-	mut res := 0
-	res = C.SSL_read(s.ssl, buffer.data, buffer.len)
+	mut res := C.SSL_read(s.ssl, buffer.data, buffer.len)
 
 	if res <= 0 {
 		err_res := s.ssl_error(res)?
@@ -82,24 +78,22 @@ pub fn (mut s SSLConn) read_into(mut buffer []Byte)? int {
 
 // write number of bytes to SSL connection
 pub fn (mut s SSLConn) write(bytes []Byte)? {
-	unsafe {
-		mut ptr_base := byteptr(bytes.data)
-		mut total_sent := 0
-		for total_sent < bytes.len {
-			ptr := ptr_base + total_sent
-			remaining := bytes.len - total_sent
-			mut sent := C.SSL_write(s.ssl, ptr, remaining)
-			if sent < 0 {
-				err_res := s.ssl_error(sent)?
-				if err_res == C.SSL_ERROR_ZERO_RETURN {
-					return error('ssl write on closed connection')
-				} else {
-					return error('WRITE GOT ERROR RESULTS FROM SSL ERROR $err_res')
-				}
-				// Todo checkf or write waits like Emily sockets
+	mut ptr_base := byteptr(bytes.data)
+	mut total_sent := 0
+	for total_sent < bytes.len {
+		ptr := unsafe {ptr_base + total_sent}
+		remaining := bytes.len - total_sent
+		mut sent := C.SSL_write(s.ssl, ptr, remaining)
+		if sent < 0 {
+			err_res := s.ssl_error(sent)?
+			if err_res == C.SSL_ERROR_ZERO_RETURN {
+				return error('ssl write on closed connection')
+			} else {
+				return error('WRITE GOT ERROR RESULTS FROM SSL ERROR $err_res')
 			}
-			total_sent += sent
+			// Todo checkf or write waits like Emily sockets
 		}
+		total_sent += sent
 	}
 }
 

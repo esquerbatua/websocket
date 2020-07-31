@@ -43,7 +43,6 @@ fn (mut ws Client) shutdown_socket()? {
 		ws.ssl_conn.shutdown()?
 	} 
 	ws.conn.close()?
-	return none
 }
 
 // dial_socket, setup socket communication, options and timeouts
